@@ -23,9 +23,9 @@
 /* entry function */
 int main(int ac, char **av, char **env)
 {
-	WaylandDisplay *wd = new WaylandDisplay();
-	wd->loop();
-	fprintf(stderr, "done activating app\n");
-	delete wd;
+	ExampleScene *exampleScene = new ExampleScene();
+	exampleScene->loop();
+	fprintf(stderr, "done running.\n");
+	delete exampleScene;
 	return 0;
 }

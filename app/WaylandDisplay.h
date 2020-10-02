@@ -4,42 +4,54 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <list>
+#include "wayland-agl-shell-client-protocol.h"
+#include "xdg-shell-client-protocol.h"
 
-struct display_state {
+struct client_display {
     struct wl_display* display = nullptr;
     struct wl_compositor* compositor = nullptr;
     struct wl_registry* registry = nullptr;    
     struct wl_output* output;
     struct wl_shm *shm;
-
-    struct agl_shell *agl_shell;
-    struct agl_shell_desktop *agl_shell_desktop; 
-
     struct xdg_wm_base* xdg_wm_base;
-
-    struct wl_surface* bg_surface;
-    struct xdg_surface* bg_xdg_surface;
-    struct xdg_toplevel* bg_toplevel;
-    void *bg_shm_data;
-    int32_t bg_width;
-    int32_t bg_height;
-
-    struct wl_surface* app_surface;
-    struct xdg_surface* app_xdg_surface;
-    struct xdg_toplevel* app_toplevel;
-    void *app_shm_data;
-    int32_t app_width;
-    int32_t app_height;
+    struct agl_shell *agl_shell; 
 };
 
-class WaylandDisplay
+struct client_buffer {
+    wl_buffer *buffer;
+    void *data;
+    bool busy;
+};
+
+struct client_content {
+    client_buffer* buffers[2];    
+};
+    
+struct client_surface {
+    struct client_display* display;
+    struct wl_surface* surface;
+    struct xdg_surface* xdg_surface;
+    struct xdg_toplevel* toplevel;
+    struct wl_callback* frameCalback;
+    int32_t width;
+    int32_t height;
+
+    client_content content;
+    void (*draw)(void* data, int32_t width, int32_t height);
+};
+
+class ExampleScene
 {
 private:
-    struct display_state* state;
+    struct client_display *display;
+    std::list<struct client_surface *> surfaces;
 public:
-    WaylandDisplay();
+    ExampleScene();
     void loop();
-    ~WaylandDisplay();
+    ~ExampleScene();
+private:
+    int init();
 };
 
 #endif /* WAYLAND_DISPLAY_H */
