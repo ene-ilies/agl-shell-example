@@ -57,8 +57,8 @@ set(SOURCES ${agl_shell_client_header}
 	${agl_shell_client_code}
 	${agl_desktop_shell_client_header}
 	${agl_desktop_shell_client_code}
-	WaylandDisplay.h
-	WaylandDisplay.cpp
+	ExampleScene.h
+	ExampleScene.cpp
 	xdg-shell-client-protocol.c
 	xdg-shell-client-protocol.h
 	${TARGET_NAME}.cpp)

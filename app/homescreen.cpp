@@ -18,13 +18,37 @@
 
 #define _GNU_SOURCE
 
-#include "WaylandDisplay.h"
+#include "ExampleScene.h"
+#include <functional>
+#include <signal.h>
+
+static bool running = true;
+
+static void
+handle_signal(int signum)
+{
+	running = false;
+}
+
+static void set_up_interrupt_handler() {
+	struct sigaction sigint;
+	sigint.sa_handler = handle_signal;
+	sigemptyset(&sigint.sa_mask);
+	sigint.sa_flags = SA_RESETHAND | SA_SIGINFO;
+	sigaction(SIGINT, &sigint, NULL);
+}
 
 /* entry function */
 int main(int ac, char **av, char **env)
 {
+	set_up_interrupt_handler();
+
+	std::function<bool()> stillRunning = []() {
+		return running;
+	};
+
 	ExampleScene *exampleScene = new ExampleScene();
-	exampleScene->loop();
+	exampleScene->loop(stillRunning);
 	fprintf(stderr, "done running.\n");
 	delete exampleScene;
 	return 0;

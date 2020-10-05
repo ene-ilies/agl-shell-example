@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <list>
+#include <functional>
 #include "wayland-agl-shell-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
 
@@ -38,7 +39,7 @@ struct client_surface {
     int32_t height;
 
     client_content content;
-    void (*draw)(void* data, int32_t width, int32_t height);
+    std::function<void(void*, int32_t, int32_t)> draw;
 };
 
 class ExampleScene
@@ -48,7 +49,7 @@ private:
     std::list<struct client_surface *> surfaces;
 public:
     ExampleScene();
-    void loop();
+    void loop(std::function<bool()> stillRunning);
     ~ExampleScene();
 private:
     int init();

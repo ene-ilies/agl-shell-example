@@ -1,4 +1,4 @@
-#include "WaylandDisplay.h"
+#include "ExampleScene.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -155,11 +155,20 @@ static void toplevel_configure(void *data, struct xdg_toplevel *xdg_toplevel,
     fprintf(stderr, "toplevel configure width: %d, height: %d\n", width, height);
 
     if (width == 0) {
-        width = 1920;
+        if (client_surface->width > 0) {
+            width = client_surface->width; 
+        } else {
+            width = 1920;
+        }        
     }
     if (height == 0) {
-        height = 200;
+        if (client_surface->height > 0) {
+            height = client_surface->height;
+        } else {
+            height = 200;
+        }
     }
+
     client_surface->width = width;
     client_surface->height = height;
     fprintf(stderr, "actual width: %d, height: %d\n", client_surface->width, client_surface->height);    
@@ -191,19 +200,25 @@ static void xdg_surface_configure(void *data, struct xdg_surface *xdg_surface, u
     client_surface->content.buffers[0] = create_client_buffer(client_surface->display->shm, client_surface->width, client_surface->height);
     client_surface->content.buffers[1] = create_client_buffer(client_surface->display->shm, client_surface->width, client_surface->height);
     fprintf(stderr, "Buffers created for surface %p\n", client_surface->surface);
+
+    redraw(client_surface, nullptr, 0);
 }
 
 struct xdg_surface_listener xdg_surface_listener = {
     .configure = xdg_surface_configure
 };
 
-static client_surface* create_surface(client_display *display, void (draw)(void *data, int32_t width, int32_t height), int32_t width, int32_t height) {
+static client_surface* create_surface(client_display *display, 
+        std::function<void(void*, int32_t, int32_t)> draw, 
+        int32_t width, int32_t height) {
     struct client_surface *new_surface = new client_surface();
     new_surface->draw = draw;
     new_surface->display = display;
+    new_surface->width = width;
+    new_surface->height = height;
 
     new_surface->surface = wl_compositor_create_surface(display->compositor);
-    if (new_surface->surface == nullptr) {
+    if (!new_surface->surface) {
         fprintf(stderr, "Can't create surface\n");
         return nullptr;
     }
@@ -257,9 +272,11 @@ void redraw(void *data, wl_callback *callback, uint32_t time) {
         wl_callback_destroy(callback);
     }
 
-    wl_callback *next_callback = wl_surface_frame(surface->surface);
-	wl_callback_add_listener(next_callback, &frame_listener, surface);
+    wl_callback *nextCallback = wl_surface_frame(surface->surface);
+	wl_callback_add_listener(nextCallback, &frame_listener, surface);
 	wl_surface_commit(surface->surface);
+
+    surface->frameCalback = nextCallback;
 }
 
 void xdg_wm_base_ping(void *data, struct xdg_wm_base *xdg_wm_base, uint32_t serial)
@@ -434,7 +451,7 @@ int ExampleScene::init() {
         return 1;
     }
 
-    client_surface* top_surface = create_surface(this->display, &top_draw, 200, 200);
+    client_surface* top_surface = create_surface(this->display, top_draw, 200, 100);
     if (!top_surface) {
         fprintf(stderr, "Unable to create top surface.\n");
         destroy_surface(top_surface);
@@ -442,7 +459,7 @@ int ExampleScene::init() {
     }
     this->surfaces.push_back(top_surface);
 
-    client_surface* background = create_surface(this->display, &bg_draw, 1920, 1080);
+    client_surface* background = create_surface(this->display, bg_draw, 1920, 1080);
     if (!background) {
         fprintf(stderr, "Unable to initialize background.\n");
         destroy_surface(background);
@@ -466,9 +483,9 @@ ExampleScene::ExampleScene()
     }
 }
 
-void ExampleScene::loop()
+void ExampleScene::loop(std::function<bool()> stillRunning)
 {
-    while (wl_display_dispatch(this->display->display) != -1)
+    while (stillRunning() && wl_display_dispatch(this->display->display) != -1)
     {
         /* This space deliberately left blank */
     }
@@ -479,6 +496,8 @@ ExampleScene::~ExampleScene()
     for (auto surface : this->surfaces) {
         destroy_surface(surface);
     }
+    fprintf(stderr, "Cleaned up all the surfaces.\n");
 
     destroy_display(this->display);
+    fprintf(stderr, "Cleaned up display related objects.\n");
 }
