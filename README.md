@@ -38,38 +38,3 @@ APP_VERSION=$(ssh root@${YOUR_BOARD_IP} afm-util list | grep ${APP_NAME}@ | cut 
 #start the binder
 ssh root@${YOUR_BOARD_IP} afm-util start ${APP_NAME}@${APP_VERSION}
 ```
-
-## TEST
-
-### AGL
-
-```bash
-export YOUR_BOARD_IP=192.168.1.X
-
-#you can display the log from systemd journal
-ssh root@${YOUR_BOARD_IP} journalctl -f
-
-#you can display log from file
-ssh root@${YOUR_BOARD_IP} cat /tmp/helloworld.log
-
-#you can display the binder status
-ssh root@${YOUR_BOARD_IP} afm-util ps
-
-#you can stop the binder by remove file **helloworld.log**
-ssh root@${YOUR_BOARD_IP} rm /tmp/helloworld.log
-```
-
-# Activate authentification security
-
-The security is actived in file **conf.d/wgt/config.xml** by:
-
-```xml
-  <feature name="urn:AGL:widget:required-permission">
-  <param name="urn:AGL:permission:monitor:public:get" value="required" />
-  </feature>
-```
-
-To disable security
-
-* remove the feature section named **urn:AGL:widget:required-permission** from the xml file **conf.d/wgt/config.xml**
-* rebuild your application
